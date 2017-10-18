@@ -9,7 +9,8 @@ import {
   ADD_PACKAGE,
   ADD_PLATFORM,
   REMOVE_PACKAGE,
-  UPDATE_PACKAGE
+  UPDATE_PACKAGE,
+  SET_PLATFORM_DATA
 } from '../actions/types';
 
 const modals = [];
@@ -23,7 +24,8 @@ const initialState = {
   frameSrc: '',
   progressEnabled: false,
   progress: 0,
-  platforms: {}
+  platforms: {},
+  platformData: {}
 };
 
 export const UIReducer = (state = initialState, action) => {
@@ -31,20 +33,31 @@ export const UIReducer = (state = initialState, action) => {
   switch (action.type) {
     case REHYDRATE:
       let incoming = action.payload.ui;
-      return { ...initialState, platforms: incoming ? incoming.platforms : {} };
+      return {
+        ...initialState,
+        platforms: incoming && incoming.platforms ? incoming.platforms : {},
+        platformData: incoming && incoming.platformData ? incoming.platformData : {}
+      };
+    case SET_PLATFORM_DATA:
+      let platformData = _.merge({}, state.platformData);
+      _.set(platformData, `${action.platform}.${action.path}`, action.value);
+      return {
+        ...state,
+        platformData
+      }
     case ADD_PACKAGE:
       return {
         ...state, platforms: { ...state.platforms, [action.platform]: state.platforms[action.platform] ? [...state.platforms[action.platform], action.pkg] : [action.pkg] }
       }
     case REMOVE_PACKAGE:
       return {
-        ...state, platforms: { ...state.platforms, [action.platform]: _.filter(state.platforms[action.platform], (v, i) => i != action.index) }
+        ...state, platforms: { ...state.platforms, [action.platform]: _.filter(state.platforms[action.platform], (v, i) => v.id != action.id) }
       }
     case UPDATE_PACKAGE:
       return {
         ...state, platforms: {
           ...state.platforms, [action.platform]: _.map(state.platforms[action.platform], (v, i) => {
-            if (i === action.index) {
+            if (v.id === action.id) {
               return action.pkg;
             }
             return v;

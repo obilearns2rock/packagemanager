@@ -8,7 +8,8 @@ import {
   REMOVE_PACKAGE,
   UPDATE_PACKAGE,
   REMOVE_PLATFORM,
-  UPDATE_PLATFORM
+  UPDATE_PLATFORM,
+  SET_PLATFORM_DATA
 } from './types';
 
 export function showNotification(title, message, level, data) {
@@ -57,19 +58,19 @@ export function addPackage(platform, pkg) {
   }
 }
 
-export function removePackage(platform, index) {
+export function removePackage(platform, id) {
   return {
     type: REMOVE_PACKAGE,
     platform,
-    index
+    id
   }
 }
 
-export function updatePackage(platform, index, pkg) {
+export function updatePackage(platform, id, pkg) {
   return {
     type: UPDATE_PACKAGE,
     platform,
-    index,
+    id,
     pkg
   }
 }
@@ -93,5 +94,14 @@ export function addPlatform(name) {
   return {
     type: ADD_PLATFORM,
     name
+  }
+}
+
+export function setPlatformData(platform, path, value) {
+  return {
+    type: SET_PLATFORM_DATA,
+    platform,
+    path,
+    value
   }
 }

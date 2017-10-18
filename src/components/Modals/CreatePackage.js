@@ -39,7 +39,7 @@ class CreatePackage extends Component {
       this.props.showNotification('Package Info Missing', 'Please fill in all necessary details', 'warning');
       return;
     }
-    this.props.addPackage(this.state.platform, this.getPackageData());
+    this.props.addPackage(this.state.platform, { id: Date.now, ...this.getPackageData() });
     this.props.onDismiss && this.props.onDismiss();
   }
 
@@ -140,7 +140,6 @@ class CreatePackage extends Component {
         <label>Quantity</label>
         <Input
           fluid
-          disabled={this.props.editMode}
           placeholder='Quantity'
           defaultValue={this.state.quantity}
           onChange={(e, { value }) => this.setState({ quantity: value })}

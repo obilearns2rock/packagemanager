@@ -7,7 +7,8 @@ export class Package {
    * @param {Date} creationDate 
    * @param {Array<Number>} runningDays 
    */
-  constructor(price, activeDeposit, quantity, percentage, percentagePeriod, duration, creationDate, runningDays) {
+  constructor(id, price, activeDeposit, quantity, percentage, percentagePeriod, duration, creationDate, runningDays) {
+    this._id = id;
     this._price = Number.parseFloat(price);
     this._activeDeposit = Number.parseFloat(activeDeposit);
     this._duration = Number.parseInt(duration);
@@ -19,6 +20,10 @@ export class Package {
     this._runningDays = runningDays;
     this._percentagePeriod = percentagePeriod;
     this._quantity = Number.parseInt(quantity);
+  }
+
+  get id() {
+    return this._id;
   }
 
   get price() {
