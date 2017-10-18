@@ -5523,6 +5523,12 @@ react-scripts@1.0.14:
   optionalDependencies:
     fsevents "1.1.2"
 
+react-table@^6.6.0:
+  version "6.6.0"
+  resolved "https://registry.yarnpkg.com/react-table/-/react-table-6.6.0.tgz#a57ffa670f8b06a18235a000315df0deaacc6cdf"
+  dependencies:
+    classnames "^2.2.5"
+
 react-with-styles-interface-css@^3.0.0:
   version "3.0.0"
   resolved "https://registry.yarnpkg.com/react-with-styles-interface-css/-/react-with-styles-interface-css-3.0.0.tgz#ebb000c23f75567f25af6792ab7a29089d798fda"

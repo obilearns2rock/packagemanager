@@ -4,6 +4,8 @@ import { Input, Dropdown, Grid, Table, Header, Checkbox, Tab, Button, Accordion,
 import { map, set, last, get, forEach, sortBy, merge, omit } from 'lodash';
 import DayPicker from 'react-day-picker';
 import 'react-day-picker/lib/style.css';
+import ReactTable from "react-table";
+import "react-table/react-table.css";
 
 import { addPackage, removePackage, showNotification, showModal, setPlatformData } from '../../actions';
 import { Package } from '../../models';
@@ -37,21 +39,20 @@ class PackageView extends Component {
         period: 'daily',
         periodDuration: 1,
         amountType: 'default',
+        minimum: 0,
+        maximum: 0,
         amount: 0,
       }
     }
   }
 
   componentDidMount() {
-    console.log('component mounted')
     setTimeout(() => {
       this.componentWillReceiveProps(this.props);
     }, 1000)
   }
 
   componentWillReceiveProps(props) {
-    console.log('component received props')
-    console.log(props);
     let state = {
       ...this.state,
       ...omit(props.platformData, ['withdrawPlan', 'rebuyPlan']),
@@ -65,7 +66,6 @@ class PackageView extends Component {
       state.rebuyPlan = { ...this.state.rebuyPlan, ...props.platformData.rebuyPlan }
     }
     this.setState(state, () => {
-      console.log(this.state);
       this.getData();
     })
   }
@@ -199,7 +199,12 @@ class PackageView extends Component {
           lastPackage.runningDays
         );
         newPackages += bought;
-        pkg.info = `rebuy: ${oldBalance.toFixed(8)} => ${balance.toFixed(8)}, tt: ${newPackages}`;
+        // pkg.info = `rebuy: ${oldBalance.toFixed(8)} => ${balance.toFixed(8)}, tt: ${newPackages}`;
+        pkg.info = {
+          before: oldBalance.toFixed(8),
+          after: balance.toFixed(8),
+          totalPacks: newPackages
+        }
         packages.push(
           pkg
         );
@@ -215,7 +220,10 @@ class PackageView extends Component {
           default:
             withdraw = this.state.withdrawPlan.amount
         }
-        if (withdraw <= balance) {
+        if (withdraw <= balance && withdraw >= this.state.withdrawPlan.minimum) {
+          if (withdraw > this.state.withdrawPlan.maximum) {
+            withdraw = this.state.withdrawPlan.maximum;
+          }
           balance -= withdraw;
           withdrawn += withdraw;
           withdrawDetails.push({
@@ -230,186 +238,205 @@ class PackageView extends Component {
   }
 
   table1() {
-    return (
-      <Table celled padded selectable compact striped>
-        <Table.Header>
-          <Table.Row>
-            <Table.HeaderCell textAlign='center'>Creation Date</Table.HeaderCell>
-            <Table.HeaderCell textAlign='center'>Creation Day</Table.HeaderCell>
-            <Table.HeaderCell textAlign='center'>Info</Table.HeaderCell>
-            <Table.HeaderCell textAlign='center'>Qty</Table.HeaderCell>
-            <Table.HeaderCell textAlign='center'>Price</Table.HeaderCell>
-            <Table.HeaderCell textAlign='center'>Active</Table.HeaderCell>
-            <Table.HeaderCell textAlign='center'>%</Table.HeaderCell>
-            <Table.HeaderCell textAlign='center'>Duration Left</Table.HeaderCell>
-            <Table.HeaderCell textAlign='center'>Running Days</Table.HeaderCell>
-          </Table.Row>
-        </Table.Header>
-
-        <Table.Body>
+    let columns = [
+      {
+        accessor: 'creationDate', Header: 'Created'
+      },
+      {
+        accessor: 'creationDay', Header: 'Day'
+      },
+      {
+        Header: 'Info',
+        columns: [
           {
-            map(this.state.packages, (x, i) => {
-              return (
-                <Table.Row key={`${this.state.platformName}-t1-${i}`} negative={!x.isActive} positive={x.isActive}>
-                  <Table.Cell textAlign='center'>
-                    {x.creationDate.toLocaleDateString()}
-                  </Table.Cell>
-                  <Table.Cell textAlign='center'>
-                    {dayMap[x.creationDate.getDay()]}
-                  </Table.Cell>
-                  <Table.Cell textAlign='center'>
-                    {x.info}
-                  </Table.Cell>
-                  <Table.Cell textAlign='center'>
-                    {x.quantity}
-                  </Table.Cell>
-                  <Table.Cell textAlign='center'>
-                    {x.price}
-                  </Table.Cell>
-                  <Table.Cell textAlign='center'>
-                    {x.activeDeposit}
-                  </Table.Cell>
-                  <Table.Cell textAlign='center'>
-                    {x.percentage}
-                  </Table.Cell>
-                  <Table.Cell textAlign='center'>
-                    {x.duration - x.durationCounter}
-                  </Table.Cell>
-                  <Table.Cell textAlign='center'>
-                    {x.runCounter}
-                  </Table.Cell>
-                </Table.Row>
-              )
-            })
+            accessor: d => {
+              return d.info ? d.info.before : '';
+            }, id: 'before', Header: 'Before'
+          },
+          {
+            accessor: d => {
+              return d.info ? d.info.after : '';
+            }, id: 'after', Header: 'After'
+          },
+          {
+            accessor: d => {
+              return d.info ? d.info.totalPacks : '';
+            }, id: 'totalPacks', Header: 'Packs'
           }
-        </Table.Body>
-      </Table>
-    );
+        ]
+      },
+      {
+        accessor: 'quantity', Header: 'Qty'
+      },
+      {
+        accessor: 'price', Header: 'Price'
+      },
+      {
+        accessor: 'active', Header: 'Active'
+      },
+      {
+        accessor: 'percentage', Header: '%'
+      },
+      {
+        accessor: 'durationLeft', Header: 'Duration Left',
+        Cell: row => (
+          <div style={{ padding: 2, color: 'white', textAlign: 'center', borderRadius: 5, ...row.value === 0 ? { background: 'rgb(220, 40, 30)' } : { background: 'rgb(133, 204, 0)' } }}>
+            {row.value}
+          </div>
+        )
+      },
+      {
+        accessor: 'runningDays', Header: 'Running Days'
+      },
+    ]
+
+    let data = map(this.state.packages, (x) => {
+      return {
+        creationDate: x.creationDate.toLocaleDateString(),
+        creationDay: dayMap[x.creationDate.getDay()],
+        info: x.info,
+        quantity: x.quantity,
+        price: x.price,
+        active: x.activeDeposit,
+        percentage: x.percentage,
+        durationLeft: x.duration - x.durationCounter,
+        runningDays: x.runCounter
+      }
+    });
+
+    return (
+      <ReactTable
+        data={data}
+        columns={columns}
+        defaultPageSize={10}
+        className="-striped -highlight"
+      />
+    )
   }
 
   table2() {
-    return (
-      <Table celled padded selectable compact striped>
-        <Table.Header>
-          <Table.Row>
-            <Table.HeaderCell textAlign='center'>Creation Date</Table.HeaderCell>
-            <Table.HeaderCell textAlign='center'>Creation Day</Table.HeaderCell>
-            <Table.HeaderCell textAlign='center'>Qty</Table.HeaderCell>
-            <Table.HeaderCell textAlign='center'>Price</Table.HeaderCell>
-            <Table.HeaderCell textAlign='center'>Active</Table.HeaderCell>
-            <Table.HeaderCell textAlign='center'>%</Table.HeaderCell>
-            <Table.HeaderCell textAlign='center'>% Period</Table.HeaderCell>
-            <Table.HeaderCell textAlign='center'>Duration</Table.HeaderCell>
-            <Table.HeaderCell textAlign='center'>Controls</Table.HeaderCell>
-          </Table.Row>
-        </Table.Header>
+    let columns = [
+      {
+        accessor: 'creationDate', Header: 'Created'
+      },
+      {
+        accessor: 'creationDay', Header: 'Day'
+      },
+      {
+        accessor: 'quantity', Header: 'Qty'
+      },
+      {
+        accessor: 'price', Header: 'Price'
+      },
+      {
+        accessor: 'active', Header: 'Active'
+      },
+      {
+        accessor: 'percentage', Header: '%'
+      },
+      {
+        accessor: 'percentagePeriod', Header: '% Period'
+      },
+      {
+        accessor: 'duration', Header: 'Duration'
+      },
+      {
+        accessor: 'package', Header: 'Controls',
+        Cell: row => (
+          <div style={{ textAlign: 'center' }} >
+            <Button size='mini' circular icon='trash' onClick={(e) => {
+              this.props.showNotification('Warning', 'Are you sure you want to delete this package ' + row.value.id, 'warning', {
+                action: {
+                  label: 'Yes',
+                  callback: () => {
+                    this.props.removePackage(this.props.platformName, row.value.id);
+                  }
+                }
+              });
+            }} />
+            <Button size='mini' circular icon='setting' onClick={(e) => {
+              this.props.showModal(
+                true,
+                <CreatePackage
+                  platform={this.props.platformName}
+                  package={row.value}
+                  edit={row.value.id}
+                  editMode
+                  onDismiss={() => this.props.showModal(false)}
+                />,
+                { size: 'small', title: 'Edit Package' }
+              );
+            }} />
+          </div>
+        )
+      }
+    ]
 
-        <Table.Body>
-          {
-            map(this.getPackages(), (x, i) => {
-              return (
-                <Table.Row key={`${this.state.platformName}-t2-${i}`} negative={!x.isActive} positive={x.isActive}>
-                  <Table.Cell textAlign='center'>
-                    {x.creationDate.toLocaleDateString()}
-                  </Table.Cell>
-                  <Table.Cell textAlign='center'>
-                    {dayMap[x.creationDate.getDay()]}
-                  </Table.Cell>
-                  <Table.Cell textAlign='center'>
-                    {x.quantity}
-                  </Table.Cell>
-                  <Table.Cell textAlign='center'>
-                    {x.price}
-                  </Table.Cell>
-                  <Table.Cell textAlign='center'>
-                    {x.activeDeposit}
-                  </Table.Cell>
-                  <Table.Cell textAlign='center'>
-                    {x.percentage}
-                  </Table.Cell>
-                  <Table.Cell textAlign='center'>
-                    {x.percentagePeriod}
-                  </Table.Cell>
-                  <Table.Cell textAlign='center'>
-                    {x.duration}
-                  </Table.Cell>
-                  <Table.Cell textAlign='center'>
-                    <Button size='mini' circular icon='trash' onClick={(e) => {
-                      this.props.showNotification('Warning', 'Are you sure you want to delete this package', 'warning', {
-                        action: {
-                          label: 'Yes',
-                          callback: () => {
-                            this.props.removePackage(this.props.platformName, x.id);
-                          }
-                        }
-                      });
-                    }} />
-                    <Button size='mini' circular icon='setting' onClick={(e) => {
-                      this.props.showModal(
-                        true,
-                        <CreatePackage
-                          platform={this.props.platformName}
-                          package={x}
-                          edit={x.id}
-                          editMode
-                          onDismiss={() => this.props.showModal(false)}
-                        />,
-                        { size: 'small', title: 'Edit Package' }
-                      );
-                    }} />
-                  </Table.Cell>
-                </Table.Row>
-              )
-            })
-          }
-        </Table.Body>
-      </Table>
+    let data = map(this.getPackages(), (x) => {
+      return {
+        creationDate: x.creationDate.toLocaleDateString(),
+        creationDay: dayMap[x.creationDate.getDay()],
+        info: x.info,
+        quantity: x.quantity,
+        price: x.price,
+        active: x.activeDeposit,
+        percentage: x.percentage,
+        percentagePeriod: x.percentagePeriod,
+        duration: x.duration,
+        package: x
+      }
+    });
+
+    return (
+      <ReactTable
+        data={data}
+        columns={columns}
+        defaultPageSize={10}
+        className="-striped -highlight"
+      />
     );
   }
 
   table3() {
-    return (
-      <Table celled padded selectable compact striped>
-        <Table.Header>
-          <Table.Row>
-            <Table.HeaderCell textAlign='center'>Date</Table.HeaderCell>
-            <Table.HeaderCell textAlign='center'>Day</Table.HeaderCell>
-            <Table.HeaderCell textAlign='center'>Withdrew</Table.HeaderCell>
-            <Table.HeaderCell textAlign='center'>Balance</Table.HeaderCell>
-          </Table.Row>
-        </Table.Header>
+    let columns = [
+      {
+        accessor: 'date', Header: 'Date'
+      },
+      {
+        accessor: 'day', Header: 'Day'
+      },
+      {
+        accessor: 'withdrew', Header: 'Withdrew'
+      },
+      {
+        accessor: 'balance', Header: 'Balance'
+      }
+    ]
 
-        <Table.Body>
-          {
-            map(this.state.withdrawDetails, (x, i) => {
-              return (
-                <Table.Row key={`${this.state.platformName}-t3-${i}`}>
-                  <Table.Cell textAlign='center'>
-                    {x.date.toLocaleDateString()}
-                  </Table.Cell>
-                  <Table.Cell textAlign='center'>
-                    {dayMap[x.date.getDay()]}
-                  </Table.Cell>
-                  <Table.Cell textAlign='center'>
-                    {x.withdraw.toFixed(8)}
-                  </Table.Cell>
-                  <Table.Cell textAlign='center'>
-                    {x.balance.toFixed(8)}
-                  </Table.Cell>
-                </Table.Row>
-              )
-            })
-          }
-        </Table.Body>
-      </Table>
+    let data = map(this.state.withdrawDetails, (x) => {
+      return {
+        date: x.date.toLocaleDateString(),
+        day: dayMap[x.date.getDay()],
+        withdrew: x.withdraw.toFixed(8),
+        balance: x.balance.toFixed(8)
+      }
+    });
+
+    return (
+      <ReactTable
+        data={data}
+        columns={columns}
+        defaultPageSize={10}
+        className="-striped -highlight"
+      />
     );
   }
 
   panes() {
     return [
-      { menuItem: 'Calculated Packages', render: () => <div>{this.table1()}</div> },
-      { menuItem: 'Added Packages', render: () => <div>{this.table2()}</div> },
-      { menuItem: 'Withdraw Details', render: () => <div>{this.table3()}</div> }
+      { menuItem: 'Calculations', render: () => <div>{this.table1()}</div> },
+      { menuItem: 'Created Packages', render: () => <div>{this.table2()}</div> },
+      { menuItem: 'Withdrawals', render: () => <div>{this.table3()}</div> }
     ];
   }
 
@@ -558,6 +585,24 @@ class PackageView extends Component {
                           type='number'
                           value={this.state.withdrawPlan.periodDuration}
                           onChange={(e, { value }) => this.setData('withdrawPlan.periodDuration', Number.parseInt(value))}
+                        />
+                        <br />
+                        <label>Minimum</label>
+                        <Input
+                          fluid
+                          placeholder='Minimum'
+                          type='number'
+                          value={this.state.withdrawPlan.minimum}
+                          onChange={(e, { value }) => this.setData('withdrawPlan.minimum', Number.parseInt(value))}
+                        />
+                        <br />
+                        <label>Maximum</label>
+                        <Input
+                          fluid
+                          placeholder='Maximum'
+                          type='number'
+                          value={this.state.withdrawPlan.maximum}
+                          onChange={(e, { value }) => this.setData('withdrawPlan.maximum', Number.parseInt(value))}
                         />
                         <br />
                         <label>Amount Type</label>

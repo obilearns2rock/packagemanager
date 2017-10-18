@@ -39,7 +39,7 @@ class CreatePackage extends Component {
       this.props.showNotification('Package Info Missing', 'Please fill in all necessary details', 'warning');
       return;
     }
-    this.props.addPackage(this.state.platform, { id: Date.now, ...this.getPackageData() });
+    this.props.addPackage(this.state.platform, { id: Date.now(), ...this.getPackageData() });
     this.props.onDismiss && this.props.onDismiss();
   }
 
