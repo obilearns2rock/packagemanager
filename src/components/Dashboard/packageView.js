@@ -41,14 +41,18 @@ class PackageView extends Component {
     }
   }
 
+  componentDidMount() {
+    setTimeout(() => {
+      this.componentWillReceiveProps(this.props);
+    }, 1000)
+  }
+
   componentWillReceiveProps(props) {
-    console.log(props);
     this.setState(merge(this.state, {
       ...props.platformData,
       platform: props.platform,
       platformName: props.platformName
     }), () => {
-      console.log(this.state);
       this.getData();
     })
   }
