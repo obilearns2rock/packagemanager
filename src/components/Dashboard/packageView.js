@@ -52,14 +52,19 @@ class PackageView extends Component {
   componentWillReceiveProps(props) {
     console.log('component received props')
     console.log(props);
-    this.setState({
+    let state = {
       ...this.state,
       ...omit(props.platformData, ['withdrawPlan', 'rebuyPlan']),
-      withdrawPlan: { ...this.state.withdrawPlan, ...props.platformData.withdrawPlan },
-      rebuyPlan: { ...this.state.rebuyPlan, ...props.platformData.rebuyPlan },
       platform: props.platform,
       platformName: props.platformName
-    }, () => {
+    }
+    if (props.platformData && props.platformData.withdrawPlan) {
+      state.withdrawPlan = { ...this.state.withdrawPlan, ...props.platformData.withdrawPlan };
+    }
+    if (props.platformData && props.platformData.rebuyPlan) {
+      state.rebuyPlan = { ...this.state.rebuyPlan, ...props.platformData.rebuyPlan }
+    }
+    this.setState(state, () => {
       console.log(this.state);
       this.getData();
     })
