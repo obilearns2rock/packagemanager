@@ -1,7 +1,7 @@
 import React, { Component, PropTypes } from 'react';
 import { connect } from 'react-redux';
 import { Input, Dropdown, Grid, Table, Header, Checkbox, Tab, Button, Accordion, Icon } from 'semantic-ui-react';
-import { map, set, last, get, forEach, sortBy, merge } from 'lodash';
+import { map, set, last, get, forEach, sortBy, merge, omit } from 'lodash';
 import DayPicker from 'react-day-picker';
 import 'react-day-picker/lib/style.css';
 
@@ -25,6 +25,7 @@ class PackageView extends Component {
       rebuyCount: 0,
       rebuyPlan: {
         max: 1,
+        totalActivePackageCount: 1,
         period: 'daily',
         periodDuration: 1
       },
@@ -42,17 +43,24 @@ class PackageView extends Component {
   }
 
   componentDidMount() {
+    console.log('component mounted')
     setTimeout(() => {
       this.componentWillReceiveProps(this.props);
     }, 1000)
   }
 
   componentWillReceiveProps(props) {
-    this.setState(merge(this.state, {
-      ...props.platformData,
+    console.log('component received props')
+    console.log(props);
+    this.setState({
+      ...this.state,
+      ...omit(props.platformData, ['withdrawPlan', 'rebuyPlan']),
+      withdrawPlan: { ...this.state.withdrawPlan, ...props.platformData.withdrawPlan },
+      rebuyPlan: { ...this.state.rebuyPlan, ...props.platformData.rebuyPlan },
       platform: props.platform,
       platformName: props.platformName
-    }), () => {
+    }, () => {
+      console.log(this.state);
       this.getData();
     })
   }
@@ -152,14 +160,22 @@ class PackageView extends Component {
       // current date
       let currentDate = startDate + (i * 24 * 60 * 60 * 1000);
       // run active packages
-      packages.filter((p) => p.isActive).forEach((p) => {
+      let active = packages.filter((p) => p.isActive)
+      active.forEach((p) => {
         if (currentDate > p.creationDate.getTime()) {
           let interest = p.run();
           balance += interest;
         }
       });
+      let activePackages = active.reduce((prev, curr) => {
+        if (curr.isActive && curr.runCounter > 0) {
+          return prev + curr.quantity;
+        } else {
+          return prev;
+        }
+      }, 0);
       // check if to rebuy
-      if (lastPackage && this.canRebuy(startDate, currentDate, balance, lastPackage.price)) {
+      if (lastPackage && this.canRebuy(startDate, currentDate, balance, lastPackage.price) && activePackages <= this.state.rebuyPlan.totalActivePackageCount) {
         let bought = 0;
         let oldBalance = balance;
         while (balance >= lastPackage.price && bought < this.state.rebuyPlan.max) {
@@ -229,7 +245,7 @@ class PackageView extends Component {
           {
             map(this.state.packages, (x, i) => {
               return (
-                <Table.Row key={i} negative={!x.isActive} positive={x.isActive}>
+                <Table.Row key={`${this.state.platformName}-t1-${i}`} negative={!x.isActive} positive={x.isActive}>
                   <Table.Cell textAlign='center'>
                     {x.creationDate.toLocaleDateString()}
                   </Table.Cell>
@@ -287,7 +303,7 @@ class PackageView extends Component {
           {
             map(this.getPackages(), (x, i) => {
               return (
-                <Table.Row key={i} negative={!x.isActive} positive={x.isActive}>
+                <Table.Row key={`${this.state.platformName}-t2-${i}`} negative={!x.isActive} positive={x.isActive}>
                   <Table.Cell textAlign='center'>
                     {x.creationDate.toLocaleDateString()}
                   </Table.Cell>
@@ -362,7 +378,7 @@ class PackageView extends Component {
           {
             map(this.state.withdrawDetails, (x, i) => {
               return (
-                <Table.Row key={i}>
+                <Table.Row key={`${this.state.platformName}-t3-${i}`}>
                   <Table.Cell textAlign='center'>
                     {x.date.toLocaleDateString()}
                   </Table.Cell>
@@ -394,7 +410,7 @@ class PackageView extends Component {
 
   render() {
     return (
-      <Grid padded stackable divided>
+      <Grid style={{ padding: 10 }} padded stackable divided>
         <Grid.Row>
           <Grid.Column width={4} textAlign='center'>
             <Header as='h4' dividing>Run Time</Header>
@@ -444,6 +460,15 @@ class PackageView extends Component {
               Rebuy Calculator
               <Checkbox style={{ float: 'right' }} toggle checked={this.state.rebuyEnabled} onChange={(e, d) => this.setData('rebuyEnabled', d.checked)} />
             </Header>
+            <label>Total Active Package Count</label>
+            <Input
+              fluid
+              placeholder='Total Active Package Count'
+              type='number'
+              value={this.state.rebuyPlan.totalActivePackageCount}
+              onChange={(e, { value }) => this.setData('rebuyPlan.totalActivePackageCount', Number.parseInt(value))}
+            />
+            <br />
             <label>Period</label>
             <Dropdown
               placeholder='Period'
@@ -461,7 +486,7 @@ class PackageView extends Component {
               fluid
               placeholder='Period Duration'
               type='number'
-              defaultValue={this.state.rebuyPlan.periodDuration}
+              value={this.state.rebuyPlan.periodDuration}
               onChange={(e, { value }) => this.setData('rebuyPlan.periodDuration', Number.parseInt(value))}
             />
             <br />

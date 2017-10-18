@@ -93,6 +93,9 @@ export class Package {
 
   run() {
     let val = 0;
+    if (this._durationCounter >= this._duration) {
+      return val;
+    }
     this._runCounter++;
     if (this._durationCounter < this._duration) {
       let time = this._creationDate.getTime() + this._runCounter * 24 * 60 * 60 * 1000;
@@ -100,15 +103,15 @@ export class Package {
       switch (this.percentagePeriod) {
         case 'weekly':
           if (day.getDay() == 1) {
-            this._durationCounter++;
             val = this._activeDeposit * this._percentage / 100;
           }
+          this._durationCounter++;
           break;
         case 'monthly':
           if (day.getDate() == 1) {
-            this._durationCounter++;
             val = this._activeDeposit * this._percentage / 100;
           }
+          this._durationCounter++;
           break;
         case 'daily':
         default:
