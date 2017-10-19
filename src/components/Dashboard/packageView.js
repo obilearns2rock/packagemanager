@@ -12,38 +12,49 @@ import { Package } from '../../models';
 import { dayMap } from '../../variables';
 import CreatePackage from '../Modals/CreatePackage';
 
+const getDefault = () => {
+  return {
+    platform: [],
+    platformName: '',
+    packages: [],
+    newPackages: 0,
+    bonus: 0.00,
+    calculateDate: Date.now(),
+    balance: 0,
+    rebuyEnabled: false,
+    rebuyCount: 0,
+    rebuyPlan: {
+      max: 1,
+      startDate: Date.now(),
+      stopDate: Date.now(),
+      startDateActive: false,
+      stopDateActive: false,
+      totalActivePackageCount: 1,
+      period: 'daily',
+      periodDuration: 1
+    },
+    withdrawn: 0,
+    withdrawDetails: [],
+    withdrawEnabled: false,
+    withdrawPlan: {
+      startDate: Date.now(),
+      stopDate: Date.now(),
+      startDateActive: false,
+      stopDateActive: false,
+      period: 'daily',
+      periodDuration: 1,
+      amountType: 'default',
+      minimum: 0,
+      maximum: 0,
+      amount: 0,
+    }
+  };
+}
+
 class PackageView extends Component {
   constructor(props) {
     super(props);
-    this.state = {
-      platform: [],
-      platformName: '',
-      packages: [],
-      newPackages: 0,
-      bonus: 0.00,
-      calculateDate: Date.now(),
-      balance: 0,
-      rebuyEnabled: false,
-      rebuyCount: 0,
-      rebuyPlan: {
-        max: 1,
-        totalActivePackageCount: 1,
-        period: 'daily',
-        periodDuration: 1
-      },
-      withdrawn: 0,
-      withdrawDetails: [],
-      withdrawEnabled: false,
-      withdrawPlan: {
-        startDate: Date.now(),
-        period: 'daily',
-        periodDuration: 1,
-        amountType: 'default',
-        minimum: 0,
-        maximum: 0,
-        amount: 0,
-      }
-    }
+    this.state = getDefault();
   }
 
   componentDidMount() {
@@ -54,7 +65,7 @@ class PackageView extends Component {
 
   componentWillReceiveProps(props) {
     let state = {
-      ...this.state,
+      ...getDefault(),
       ...omit(props.platformData, ['withdrawPlan', 'rebuyPlan']),
       platform: props.platform,
       platformName: props.platformName
@@ -112,7 +123,11 @@ class PackageView extends Component {
   }
 
   canRebuy(startDate, currentDate, balance, price) {
-    if (this.state.rebuyEnabled && balance >= price) {
+    let rebuyStartDate = this.state.rebuyPlan.startDate;
+    let rebuyStopDate = this.state.rebuyPlan.stopDate;
+    let rebuyStartDateBool = this.state.rebuyPlan.startDateActive ? currentDate >= rebuyStartDate : true;
+    let rebuyStopDateBool = this.state.rebuyPlan.stopDateActive ? currentDate <= rebuyStopDate : true;
+    if (this.state.rebuyEnabled && balance >= price && rebuyStartDateBool && rebuyStopDateBool) {
       let start = new Date(startDate);
       let current = new Date(currentDate);
       let delta = Math.floor((currentDate - startDate) / (24 * 60 * 60 * 1000));
@@ -131,7 +146,10 @@ class PackageView extends Component {
 
   canWithdraw(currentDate, balance) {
     let startDate = this.state.withdrawPlan.startDate;
-    if (this.state.withdrawEnabled && currentDate >= startDate) {
+    let stopDate = this.state.withdrawPlan.stopDate;
+    let startDateBool = this.state.withdrawPlan.startDateActive ? currentDate >= startDate : true;
+    let stopDateBool = this.state.withdrawPlan.stopDateActive ? currentDate <= stopDate : true;
+    if (this.state.withdrawEnabled && startDateBool && stopDateBool) {
       let start = new Date(startDate);
       let current = new Date(currentDate);
       let delta = Math.floor((currentDate - startDate) / (24 * 60 * 60 * 1000));
@@ -492,43 +510,100 @@ class PackageView extends Component {
               Rebuy Calculator
               <Checkbox style={{ float: 'right' }} toggle checked={this.state.rebuyEnabled} onChange={(e, d) => this.setData('rebuyEnabled', d.checked)} />
             </Header>
-            <label>Total Active Package Count</label>
-            <Input
-              fluid
-              placeholder='Total Active Package Count'
-              type='number'
-              value={this.state.rebuyPlan.totalActivePackageCount}
-              onChange={(e, { value }) => this.setData('rebuyPlan.totalActivePackageCount', Number.parseInt(value))}
-            />
-            <br />
-            <label>Period</label>
-            <Dropdown
-              placeholder='Period'
-              fluid
-              selection
-              defaultValue={this.state.rebuyPlan.period}
-              options={
-                map(['daily', 'weekly', 'monthly'], (x, i) => ({ key: x, text: x, value: x }))
-              }
-              onChange={(e, { value }) => this.setData('rebuyPlan.period', value)}
-            />
-            <br />
-            <label>Period Duration</label>
-            <Input
-              fluid
-              placeholder='Period Duration'
-              type='number'
-              value={this.state.rebuyPlan.periodDuration}
-              onChange={(e, { value }) => this.setData('rebuyPlan.periodDuration', Number.parseInt(value))}
-            />
-            <br />
-            <label>Maximum Packages</label>
-            <Input
-              fluid
-              placeholder='Maximum Packages'
-              type='number'
-              value={this.state.rebuyPlan.max}
-              onChange={(e, { value }) => this.setData('rebuyPlan.max', Number.parseInt(value))}
+            <Accordion defaultActiveIndex={0}
+              panels={[
+                {
+                  title: (
+                    <Accordion.Title key={0}>
+                      <Icon name='calendar' />
+                      Start On
+                      <Checkbox style={{ float: 'right' }} toggle checked={this.state.rebuyPlan.startDateActive} onChange={(e, d) => this.setData('rebuyPlan.startDateActive', d.checked)} />
+                    </Accordion.Title>
+                  ),
+                  content: {
+                    content: (
+                      <DayPicker
+                        month={new Date(this.state.rebuyPlan.startDate)}
+                        selectedDays={[new Date(this.state.rebuyPlan.startDate)]}
+                        onDayClick={(d) => this.setData('rebuyPlan.startDate', d.getTime())}
+                      />
+                    ),
+                    key: 'content-0'
+                  }
+                },
+                {
+                  title: (
+                    <Accordion.Title key={1}>
+                      <Icon name='calendar' />
+                      Stop On
+                      <Checkbox style={{ float: 'right' }} toggle checked={this.state.rebuyPlan.stopDateActive} onChange={(e, d) => this.setData('rebuyPlan.stopDateActive', d.checked)} />
+                    </Accordion.Title>
+                  ),
+                  content: {
+                    content: (
+                      <DayPicker
+                        month={new Date(this.state.rebuyPlan.stopDate)}
+                        selectedDays={[new Date(this.state.rebuyPlan.stopDate)]}
+                        onDayClick={(d) => this.setData('rebuyPlan.stopDate', d.getTime())}
+                      />
+                    ),
+                    key: 'content-1'
+                  }
+                },
+                {
+                  title: (
+                    <Accordion.Title key={2}>
+                      <Icon name='cart' />
+                      Rebuy Plan
+                    </Accordion.Title>
+                  ),
+                  content: {
+                    content: (
+                      <div>
+                        <label>Total Active Package Count</label>
+                        <Input
+                          fluid
+                          placeholder='Total Active Package Count'
+                          type='number'
+                          value={this.state.rebuyPlan.totalActivePackageCount}
+                          onChange={(e, { value }) => this.setData('rebuyPlan.totalActivePackageCount', Number.parseInt(value))}
+                        />
+                        <br />
+                        <label>Period</label>
+                        <Dropdown
+                          placeholder='Period'
+                          fluid
+                          selection
+                          defaultValue={this.state.rebuyPlan.period}
+                          options={
+                            map(['daily', 'weekly', 'monthly'], (x, i) => ({ key: x, text: x, value: x }))
+                          }
+                          onChange={(e, { value }) => this.setData('rebuyPlan.period', value)}
+                        />
+                        <br />
+                        <label>Period Duration</label>
+                        <Input
+                          fluid
+                          placeholder='Period Duration'
+                          type='number'
+                          value={this.state.rebuyPlan.periodDuration}
+                          onChange={(e, { value }) => this.setData('rebuyPlan.periodDuration', Number.parseInt(value))}
+                        />
+                        <br />
+                        <label>Maximum Packages</label>
+                        <Input
+                          fluid
+                          placeholder='Maximum Packages'
+                          type='number'
+                          value={this.state.rebuyPlan.max}
+                          onChange={(e, { value }) => this.setData('rebuyPlan.max', Number.parseInt(value))}
+                        />
+                      </div>
+                    ),
+                    key: 'content-2'
+                  }
+                }
+              ]}
             />
           </Grid.Column>
           <Grid.Column width={4}>
@@ -543,6 +618,7 @@ class PackageView extends Component {
                     <Accordion.Title key={0}>
                       <Icon name='calendar' />
                       Start On
+                      <Checkbox style={{ float: 'right' }} toggle checked={this.state.withdrawPlan.startDateActive} onChange={(e, d) => this.setData('withdrawPlan.startDateActive', d.checked)} />
                     </Accordion.Title>
                   ),
                   content: {
@@ -559,6 +635,25 @@ class PackageView extends Component {
                 {
                   title: (
                     <Accordion.Title key={1}>
+                      <Icon name='calendar' />
+                      Stop On
+                      <Checkbox style={{ float: 'right' }} toggle checked={this.state.withdrawPlan.stopDateActive} onChange={(e, d) => this.setData('withdrawPlan.stopDateActive', d.checked)} />
+                    </Accordion.Title>
+                  ),
+                  content: {
+                    content: (
+                      <DayPicker
+                        month={new Date(this.state.withdrawPlan.stopDate)}
+                        selectedDays={[new Date(this.state.withdrawPlan.stopDate)]}
+                        onDayClick={(d) => this.setData('withdrawPlan.stopDate', d.getTime())}
+                      />
+                    ),
+                    key: 'content-1'
+                  }
+                },
+                {
+                  title: (
+                    <Accordion.Title key={2}>
                       <Icon name='in cart' />
                       Withdraw Plan
                     </Accordion.Title>
@@ -627,7 +722,7 @@ class PackageView extends Component {
                         />
                       </div>
                     ),
-                    key: 'content-1'
+                    key: 'content-2'
                   }
                 }
               ]}
