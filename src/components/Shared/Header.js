@@ -114,7 +114,7 @@ const styles = {
     flexDirection: 'row',
     alignItems: 'center',
     height: 60,
-    backgroundColor: 'rgb(0, 191, 254)',
+    backgroundColor: 'gray',
     // borderBottom: '1px solid rgba(0, 0, 0, 0.1)',
     boxShadow: '0px -1px 10px rgba(0,0,0,.4)',
   },

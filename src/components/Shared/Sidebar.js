@@ -1,14 +1,18 @@
 import React, { Component, PropTypes } from 'react';
 import { Route, Redirect, NavLink } from 'react-router-dom';
-import { Image, Icon } from 'semantic-ui-react';
+import { Image, Icon, Divider, Button, Input } from 'semantic-ui-react';
 import { connect } from 'react-redux';
 import { get, map, keys } from 'lodash';
 
 import {
-  showModal, showFrame, showNotification
+  showModal, showFrame, showNotification, removePlatform, updatePlatform
 } from '../../actions';
 
 class Sidebar extends Component {
+  state = {
+    newName: ''
+  }
+
   componentDidMount() {
     console.log(this.props.match);
   }
@@ -23,6 +27,54 @@ class Sidebar extends Component {
 
   onNavClick(name) {
     this.props.onNavClick && this.props.onNavClick(name);
+  }
+
+  removePlatform(name) {
+    this.props.showNotification('Warning', 'Are you sure you want to delete this platform', 'warning', {
+      action: {
+        label: 'Yes',
+        callback: () => {
+          this.props.showModal(false);
+          this.props.removePlatform(name);
+        }
+      },
+      position: 'tc'
+    });
+  }
+
+  updatePlatform(name) {
+    this.props.showModal(false);
+    this.state.newName && this.props.updatePlatform(name, this.state.newName);
+  }
+
+  settings(name) {
+    let View = ({ name, onUpdate, removePlatform, updatePlatform }) => (
+      <div>
+        <Input fluid defaultValue={name} onChange={(e, d) => {
+          onUpdate(d.value);
+        }} />
+        <br />
+        <Button fluid basic onClick={() => updatePlatform(name)}>
+          <Icon name='save' />
+          Update Platform
+        </Button>
+        <br />
+        <Button fluid basic onClick={() => removePlatform(name)}>
+          <Icon name='trash' />
+          Remove Platform
+        </Button>
+      </div>
+    )
+    this.props.showModal(true,
+      <View
+        name={name}
+        removePlatform={this.removePlatform.bind(this)}
+        updatePlatform={this.updatePlatform.bind(this)}
+        onUpdate={(name) => this.setState({ newName: name })}
+      />, {
+        title: 'Platform Config',
+        size: 'mini'
+      })
   }
 
   render() {
@@ -40,12 +92,21 @@ class Sidebar extends Component {
                   <span>Dashboard</span>
                 </NavLink>
               </li>
+            </ul>
+          </div>
+          <Divider horizontal fitted>Packages</Divider>
+          <div>
+            <ul className="nav">
               {
                 map(this.props.platforms, (x) => (
                   <li key={x} className={this.isCurrentPath(`/dashboard/${x}`) ? 'active' : ''}>
                     <NavLink to={`/dashboard/${x}`} onClick={() => this.onNavClick(x)}>
-                      <Icon name='grid layout' />
-                      <span>{x}</span>
+                      <Button icon='setting' basic circular size='mini' onClick={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        this.settings(x);
+                      }} />
+                      <span style={{ verticalAlign: 'sub' }}>{x}</span>
                     </NavLink>
                   </li>
                 ))
@@ -117,5 +178,5 @@ const mapStateToProps = (state) => {
 }
 
 export const VisibleSidebar = connect(mapStateToProps, {
-  showModal, showFrame, showNotification
+  showModal, showFrame, showNotification, removePlatform, updatePlatform
 })(Sidebar);

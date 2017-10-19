@@ -8,7 +8,9 @@ import {
   SHOW_PROGRESS,
   ADD_PACKAGE,
   ADD_PLATFORM,
+  UPDATE_PLATFORM,
   REMOVE_PACKAGE,
+  REMOVE_PLATFORM,
   UPDATE_PACKAGE,
   SET_PLATFORM_DATA
 } from '../actions/types';
@@ -67,6 +69,14 @@ export const UIReducer = (state = initialState, action) => {
     case ADD_PLATFORM:
       return {
         ...state, platforms: { ...state.platforms, [action.name]: [] }
+      }
+    case UPDATE_PLATFORM:
+      return {
+        ...state, platforms: { ..._.omit(state.platforms, action.platform), [action.name]: state.platforms[action.platform] }
+      }
+    case REMOVE_PLATFORM:
+      return {
+        ...state, platforms: { ..._.omit(state.platforms, action.platform) }
       }
     case SHOW_NOTIFICATON:
       return {

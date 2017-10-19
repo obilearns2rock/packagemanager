@@ -36,7 +36,6 @@ class ModalManager extends Component {
   }
 
   render() {
-    console.log(this.props)
     const { show, component, props, showModal } = this.props;
     if (!component) return null;
     return (
