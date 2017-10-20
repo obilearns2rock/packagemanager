@@ -60,7 +60,7 @@ export const UIReducer = (state = initialState, action) => {
         ...state, platforms: {
           ...state.platforms, [action.platform]: _.map(state.platforms[action.platform], (v, i) => {
             if (v.id === action.id) {
-              return action.pkg;
+              return { ...v, ...action.pkg };
             }
             return v;
           })

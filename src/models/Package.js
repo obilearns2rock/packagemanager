@@ -20,6 +20,7 @@ export class Package {
     this._runningDays = runningDays;
     this._percentagePeriod = percentagePeriod;
     this._quantity = Number.parseInt(quantity);
+    this._enabled = true;
   }
 
   get id() {
@@ -85,6 +86,14 @@ export class Package {
 
   get info() {
     return this._info;
+  }
+
+  set enabled(enabled) {
+    this._enabled = enabled;
+  }
+
+  get isEnabled() {
+    return this._enabled;
   }
 
   toString() {

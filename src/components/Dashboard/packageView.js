@@ -1,13 +1,13 @@
 import React, { Component, PropTypes } from 'react';
 import { connect } from 'react-redux';
 import { Input, Dropdown, Grid, Table, Header, Checkbox, Tab, Button, Accordion, Icon } from 'semantic-ui-react';
-import { map, set, last, get, forEach, sortBy, merge, omit } from 'lodash';
+import { map, set, last, get, forEach, sortBy, merge, omit, has, filter } from 'lodash';
 import DayPicker from 'react-day-picker';
 import 'react-day-picker/lib/style.css';
 import ReactTable from "react-table";
 import "react-table/react-table.css";
 
-import { addPackage, removePackage, showNotification, showModal, setPlatformData } from '../../actions';
+import { addPackage, removePackage, updatePackage, showNotification, showModal, setPlatformData } from '../../actions';
 import { Package } from '../../models';
 import { dayMap } from '../../variables';
 import CreatePackage from '../Modals/CreatePackage';
@@ -107,7 +107,11 @@ class PackageView extends Component {
 
   getPackages() {
     return sortBy(map(this.state.platform, (x) => {
-      return new Package(x.id, x.price, x.activeDeposit, x.quantity, x.percentage, x.percentagePeriod, x.duration, x.creationDate, x.runningDays);
+      let pkg = new Package(x.id, x.price, x.activeDeposit, x.quantity, x.percentage, x.percentagePeriod, x.duration, x.creationDate, x.runningDays);
+      if (has(x, 'enabled')) {
+        pkg.enabled = x.enabled;
+      }
+      return pkg;
     }), 'creationDate');
   }
 
@@ -125,8 +129,8 @@ class PackageView extends Component {
   canRebuy(startDate, currentDate, balance, price) {
     let rebuyStartDate = this.state.rebuyPlan.startDate;
     let rebuyStopDate = this.state.rebuyPlan.stopDate;
-    let rebuyStartDateBool = this.state.rebuyPlan.startDateActive ? currentDate >= rebuyStartDate : true;
-    let rebuyStopDateBool = this.state.rebuyPlan.stopDateActive ? currentDate <= rebuyStopDate : true;
+    let rebuyStartDateBool = this.state.rebuyPlan.startDateActive ? currentDate > rebuyStartDate : true;
+    let rebuyStopDateBool = this.state.rebuyPlan.stopDateActive ? currentDate < rebuyStopDate : true;
     if (this.state.rebuyEnabled && balance >= price && rebuyStartDateBool && rebuyStopDateBool) {
       let start = new Date(startDate);
       let current = new Date(currentDate);
@@ -147,8 +151,8 @@ class PackageView extends Component {
   canWithdraw(currentDate, balance) {
     let startDate = this.state.withdrawPlan.startDate;
     let stopDate = this.state.withdrawPlan.stopDate;
-    let startDateBool = this.state.withdrawPlan.startDateActive ? currentDate >= startDate : true;
-    let stopDateBool = this.state.withdrawPlan.stopDateActive ? currentDate <= stopDate : true;
+    let startDateBool = this.state.withdrawPlan.startDateActive ? currentDate > startDate : true;
+    let stopDateBool = this.state.withdrawPlan.stopDateActive ? currentDate < stopDate : true;
     if (this.state.withdrawEnabled && startDateBool && stopDateBool) {
       let start = new Date(startDate);
       let current = new Date(currentDate);
@@ -183,7 +187,7 @@ class PackageView extends Component {
       // current date
       let currentDate = startDate + (i * 24 * 60 * 60 * 1000);
       // run active packages
-      let active = packages.filter((p) => p.isActive)
+      let active = packages.filter((p) => p.isActive && p.isEnabled)
       active.forEach((p) => {
         if (currentDate > p.creationDate.getTime()) {
           let interest = p.run();
@@ -255,6 +259,10 @@ class PackageView extends Component {
     this.setState({ balance, withdrawn, withdrawDetails, packages: sortBy(packages, 'creationDate'), newPackages });
   }
 
+  updatePackage(id, data) {
+    this.props.updatePackage(this.state.platformName, id, data);
+  }
+
   table1() {
     let columns = [
       {
@@ -308,7 +316,7 @@ class PackageView extends Component {
       },
     ]
 
-    let data = map(this.state.packages, (x) => {
+    let data = map(filter(this.state.packages, x => x.isEnabled), (x) => {
       return {
         creationDate: x.creationDate.toLocaleDateString(),
         creationDay: dayMap[x.creationDate.getDay()],
@@ -357,6 +365,12 @@ class PackageView extends Component {
       },
       {
         accessor: 'duration', Header: 'Duration'
+      },
+      {
+        accessor: 'package', Header: 'Enabled',
+        Cell: row => (
+          <Checkbox toggle checked={row.value.isEnabled} onChange={(e, d) => this.updatePackage(row.value.id, { enabled: d.checked })} />
+        )
       },
       {
         accessor: 'package', Header: 'Controls',
@@ -471,7 +485,7 @@ class PackageView extends Component {
             />
           </Grid.Column>
           <Grid.Column width={4}>
-            <Header as='h4' dividing>Activity Details</Header>
+            <Header as='h4' dividing>Account Details</Header>
             <Table celled padded selectable compact striped>
               <Table.Body>
                 <Table.Row>
@@ -754,7 +768,7 @@ const mapStateToProps = (state, props) => {
 }
 
 const VisiblePackageView = connect(mapStateToProps, {
-  showNotification, addPackage, removePackage, showModal, setPlatformData
+  showNotification, addPackage, removePackage, updatePackage, showModal, setPlatformData
 })(PackageView);
 
 export default VisiblePackageView;
