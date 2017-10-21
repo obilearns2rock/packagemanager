@@ -46,7 +46,8 @@ const styles = {
     margin: 15
   },
   thumb: {
-    maxHeight: 150,
+    height: 180,
+    width: '100%',
     marginLeft: 'auto',
     marginRight: 'auto',
     cursor: 'pointer'

@@ -1,0 +1,58 @@
+{
+  "adverts": [
+    {
+      "image": "https://laser.online/personal/images/sidebar_banner.jpg",
+      "url": "https://laser.online/?referrer=obilolo"
+    }
+  ],
+  "sections": {
+    "cards": [
+      {
+        "name": "USI-TECH",
+        "image": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTkuMRFWdw2fbVmhEDG_-5gBD6XB_XawaluKNZTNdDmMF3Jg6_z",
+        "url": "https://ed381113.usi-tech.info/",
+        "description": ""
+      },
+      {
+        "name": "ROLY INVESTMENT",
+        "image": "https://i2.wp.com/vyducnhathuy.com/wp-content/uploads/2017/08/Roly-Investment-logo.png?resize=696%2C452",
+        "url": "https://roly-investment.org/landing/obilolo",
+        "description": ""
+      },
+      {
+        "name": "Atlantic Global Asset Management",
+        "image": "https://pbs.twimg.com/media/DA7u9H0W0AAMiha.jpg",
+        "url": "https://atlanticgam.es/partner=P09201505471038",
+        "description": ""
+      },
+      {
+        "name": "Laser Online",
+        "image": "https://laser.online/media/news/news8_2.jpg",
+        "url": "https://laser.online/?referrer=obilolo",
+        "description": ""
+      },
+      {
+        "name": "Freebitco",
+        "image": "http://toppayingsites.net/wp-content/uploads/2016/09/freebitco.in-reward-points-350x200.png",
+        "url": "https://freebitco.in/?r=6756469",
+        "description": ""
+      }
+    ],
+    "videos": [
+      {
+        "url": "https://www.youtube.com/embed/ScMzIvxBSi4",
+        "description": [
+          {
+            "title": "USI-TECH Basic Information",
+            "body": [
+              "Buy a BTC package for 50 euros and get <b>1%</b> on the BTC value for a 140 days.<br/>",
+              "That's not all there's is to it. But it is discovered that by compounding,",
+              "you can actually make more than you can ever imagine.<br/>",
+              "Please see the video for more details"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
