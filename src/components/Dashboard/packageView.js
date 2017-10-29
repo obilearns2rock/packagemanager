@@ -580,7 +580,7 @@ class PackageView extends Component {
                           placeholder='Total Active Package Count'
                           type='number'
                           value={this.state.rebuyPlan.totalActivePackageCount}
-                          onChange={(e, { value }) => this.setData('rebuyPlan.totalActivePackageCount', Number.parseInt(value))}
+                          onChange={(e, { value }) => this.setData('rebuyPlan.totalActivePackageCount', Number.parseFloat(value))}
                         />
                         <br />
                         <label>Period</label>
@@ -601,7 +601,7 @@ class PackageView extends Component {
                           placeholder='Period Duration'
                           type='number'
                           value={this.state.rebuyPlan.periodDuration}
-                          onChange={(e, { value }) => this.setData('rebuyPlan.periodDuration', Number.parseInt(value))}
+                          onChange={(e, { value }) => this.setData('rebuyPlan.periodDuration', Number.parseFloat(value))}
                         />
                         <br />
                         <label>Maximum Packages</label>
@@ -610,7 +610,7 @@ class PackageView extends Component {
                           placeholder='Maximum Packages'
                           type='number'
                           value={this.state.rebuyPlan.max}
-                          onChange={(e, { value }) => this.setData('rebuyPlan.max', Number.parseInt(value))}
+                          onChange={(e, { value }) => this.setData('rebuyPlan.max', Number.parseFloat(value))}
                         />
                       </div>
                     ),
@@ -693,7 +693,7 @@ class PackageView extends Component {
                           placeholder='Period Duration'
                           type='number'
                           value={this.state.withdrawPlan.periodDuration}
-                          onChange={(e, { value }) => this.setData('withdrawPlan.periodDuration', Number.parseInt(value))}
+                          onChange={(e, { value }) => this.setData('withdrawPlan.periodDuration', Number.parseFloat(value))}
                         />
                         <br />
                         <label>Minimum</label>
@@ -702,7 +702,7 @@ class PackageView extends Component {
                           placeholder='Minimum'
                           type='number'
                           value={this.state.withdrawPlan.minimum}
-                          onChange={(e, { value }) => this.setData('withdrawPlan.minimum', Number.parseInt(value))}
+                          onChange={(e, { value }) => this.setData('withdrawPlan.minimum', Number.parseFloat(value))}
                         />
                         <br />
                         <label>Maximum</label>
@@ -711,7 +711,7 @@ class PackageView extends Component {
                           placeholder='Maximum'
                           type='number'
                           value={this.state.withdrawPlan.maximum}
-                          onChange={(e, { value }) => this.setData('withdrawPlan.maximum', Number.parseInt(value))}
+                          onChange={(e, { value }) => this.setData('withdrawPlan.maximum', Number.parseFloat(value))}
                         />
                         <br />
                         <label>Amount Type</label>
@@ -732,7 +732,7 @@ class PackageView extends Component {
                           placeholder='Amount'
                           type='number'
                           value={this.state.withdrawPlan.amount}
-                          onChange={(e, { value }) => this.setData('withdrawPlan.amount', Number.parseInt(value))}
+                          onChange={(e, { value }) => this.setData('withdrawPlan.amount', Number.parseFloat(value))}
                         />
                       </div>
                     ),
