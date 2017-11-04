@@ -1,7 +1,7 @@
 import React, { Component, PropTypes } from 'react';
 import { connect } from 'react-redux';
-import { Input, Dropdown, Grid, Table, Header, Checkbox, Tab, Button, Accordion, Icon } from 'semantic-ui-react';
-import { map, set, last, get, forEach, sortBy, merge, omit, has, filter } from 'lodash';
+import { Input, Dropdown, Grid, Table, Header, Checkbox, Tab, Button, Accordion, Icon, List } from 'semantic-ui-react';
+import { map, set, last, get, forEach, sortBy, merge, omit, has, filter, keys } from 'lodash';
 import DayPicker from 'react-day-picker';
 import 'react-day-picker/lib/style.css';
 import ReactTable from "react-table";
@@ -21,26 +21,21 @@ const getDefault = () => {
     bonus: 0.00,
     calculateDate: Date.now(),
     balance: 0,
-    rebuyEnabled: false,
-    rebuyCount: 0,
+    rebuyPlanList: [],
     rebuyPlan: {
       max: 1,
       startDate: Date.now(),
       stopDate: Date.now(),
-      startDateActive: false,
-      stopDateActive: false,
       totalActivePackageCount: 1,
       period: 'daily',
       periodDuration: 1
     },
     withdrawn: 0,
     withdrawDetails: [],
-    withdrawEnabled: false,
+    withdrawPlanList: [],
     withdrawPlan: {
       startDate: Date.now(),
       stopDate: Date.now(),
-      startDateActive: false,
-      stopDateActive: false,
       period: 'daily',
       periodDuration: 1,
       amountType: 'default',
@@ -127,45 +122,51 @@ class PackageView extends Component {
   }
 
   canRebuy(startDate, currentDate, balance, price) {
-    let rebuyStartDate = this.state.rebuyPlan.startDate;
-    let rebuyStopDate = this.state.rebuyPlan.stopDate;
-    let rebuyStartDateBool = this.state.rebuyPlan.startDateActive ? currentDate > rebuyStartDate : true;
-    let rebuyStopDateBool = this.state.rebuyPlan.stopDateActive ? currentDate < rebuyStopDate : true;
-    if (this.state.rebuyEnabled && balance >= price && rebuyStartDateBool && rebuyStopDateBool) {
-      let start = new Date(startDate);
-      let current = new Date(currentDate);
-      let delta = Math.floor((currentDate - startDate) / (24 * 60 * 60 * 1000));
-      switch (this.state.rebuyPlan.period) {
-        case 'weekly':
-          return delta % (7 * this.state.rebuyPlan.periodDuration) === 0;
-        case 'monthly':
-          return current.getDate() === 1 && delta % (this.state.rebuyPlan.periodDuration * 28) >= 0;
-        case 'daily':
-        default:
-          return delta % this.state.rebuyPlan.periodDuration === 0;
+    for (var i = 0; i < this.state.rebuyPlanList.length; i++) {
+      let rebuyPlan = this.state.rebuyPlanList[i];
+      let rebuyStartDate = rebuyPlan.startDate;
+      let rebuyStopDate = rebuyPlan.stopDate;
+      let rebuyStartDateBool = currentDate > rebuyStartDate;
+      let rebuyStopDateBool = rebuyPlan.stopDate > rebuyPlan.startDate ? currentDate < rebuyStopDate : true;
+      if (balance >= price && rebuyStartDateBool && rebuyStopDateBool) {
+        let start = new Date(startDate);
+        let current = new Date(currentDate);
+        let delta = Math.floor((currentDate - startDate) / (24 * 60 * 60 * 1000));
+        switch (rebuyPlan.period) {
+          case 'weekly':
+            return delta % (7 * rebuyPlan.periodDuration) === 0;
+          case 'monthly':
+            return current.getDate() === 1 && delta % (rebuyPlan.periodDuration * 28) >= 0;
+          case 'daily':
+          default:
+            return delta % rebuyPlan.periodDuration === 0;
+        }
       }
     }
     return false;
   }
 
   canWithdraw(currentDate, balance) {
-    let startDate = this.state.withdrawPlan.startDate;
-    let stopDate = this.state.withdrawPlan.stopDate;
-    let startDateBool = this.state.withdrawPlan.startDateActive ? currentDate > startDate : true;
-    let stopDateBool = this.state.withdrawPlan.stopDateActive ? currentDate < stopDate : true;
-    if (this.state.withdrawEnabled && startDateBool && stopDateBool) {
-      let start = new Date(startDate);
-      let current = new Date(currentDate);
-      let delta = Math.floor((currentDate - startDate) / (24 * 60 * 60 * 1000));
-      // debugger 
-      switch (this.state.withdrawPlan.period) {
-        case 'weekly':
-          return delta % (7 * this.state.withdrawPlan.periodDuration) === 0;
-        case 'monthly':
-          return current.getDate() === 1 && delta % (this.state.withdrawPlan.periodDuration * 28) >= 0;
-        case 'daily':
-        default:
-          return delta % this.state.withdrawPlan.periodDuration === 0;
+    for (var i = 0; i < this.state.withdrawPlanList.length; i++) {
+      let withdrawPlan = this.state.withdrawPlanList[i];
+      let startDate = withdrawPlan.startDate;
+      let stopDate = withdrawPlan.stopDate;
+      let startDateBool = currentDate > startDate;
+      let stopDateBool = withdrawPlan.stopDate > withdrawPlan.startDate ? currentDate < stopDate : true;
+      if (startDateBool && stopDateBool) {
+        let start = new Date(startDate);
+        let current = new Date(currentDate);
+        let delta = Math.floor((currentDate - startDate) / (24 * 60 * 60 * 1000));
+        // debugger 
+        switch (withdrawPlan.period) {
+          case 'weekly':
+            return delta % (7 * withdrawPlan.periodDuration) === 0;
+          case 'monthly':
+            return current.getDate() === 1 && delta % (withdrawPlan.periodDuration * 28) >= 0;
+          case 'daily':
+          default:
+            return delta % withdrawPlan.periodDuration === 0;
+        }
       }
     }
     return false;
@@ -261,6 +262,30 @@ class PackageView extends Component {
 
   updatePackage(id, data) {
     this.props.updatePackage(this.state.platformName, id, data);
+  }
+
+  addRebuyPlan() {
+    console.log(this.state.rebuyPlan);
+    this.setData('rebuyPlanList', [...this.state.rebuyPlanList, this.state.rebuyPlan]);
+  }
+
+  addWithdrawPlan() {
+    console.log(this.state.withdrawPlan);
+    this.setData('withdrawPlanList', [...this.state.withdrawPlanList, this.state.withdrawPlan]);
+  }
+
+  deleteRebuy(index) {
+    let list = [...this.state.rebuyPlanList];
+    list.splice(index, 1);
+    console.log(index, list);
+    this.setData('rebuyPlanList', list);
+  }
+
+  deleteWithdraw(index) {
+    let list = [...this.state.withdrawPlanList];
+    list.splice(index, 1);
+    console.log(index, list);
+    this.setData('withdrawPlanList', list);
   }
 
   table1() {
@@ -522,16 +547,60 @@ class PackageView extends Component {
           <Grid.Column width={4}>
             <Header as='h4' dividing>
               Rebuy Calculator
-              <Checkbox style={{ float: 'right' }} toggle checked={this.state.rebuyEnabled} onChange={(e, d) => this.setData('rebuyEnabled', d.checked)} />
             </Header>
-            <Accordion defaultActiveIndex={0}
+            <Accordion defaultActiveIndex={1}
               panels={[
                 {
                   title: (
                     <Accordion.Title key={0}>
+                      <Icon name='tasks' />
+                      Active Rebuy Plans
+                    </Accordion.Title>
+                  ),
+                  content: {
+                    content: (
+                      <List divided verticalAlign='middle'>
+                        {
+                          map(this.state.rebuyPlanList, (plan, i) => {
+                            return (
+                              <List.Item key={i}>
+                                <List.Content floated='right'>
+                                  <Button size='tiny' circular icon='remove' onClick={() => this.deleteRebuy(i)} />
+                                </List.Content>
+                                <List.Content>
+                                  <Table basic='very' celled collapsing>
+                                    <Table.Body>
+                                      {
+                                        map(keys(plan), (k, j) => {
+                                          return (
+                                            <Table.Row key={j}>
+                                              <Table.Cell>
+                                                {k}
+                                              </Table.Cell>
+                                              <Table.Cell>
+                                                {k.match(/date/i) ? new Date(get(plan, k)).toLocaleDateString() : get(plan, k)}
+                                              </Table.Cell>
+                                            </Table.Row>
+                                          )
+                                        })
+                                      }
+                                    </Table.Body>
+                                  </Table>
+                                </List.Content>
+                              </List.Item>
+                            )
+                          })
+                        }
+                      </List>
+                    ),
+                    key: 'content-0'
+                  }
+                },
+                {
+                  title: (
+                    <Accordion.Title key={1}>
                       <Icon name='calendar' />
                       Start On
-                      <Checkbox style={{ float: 'right' }} toggle checked={this.state.rebuyPlan.startDateActive} onChange={(e, d) => this.setData('rebuyPlan.startDateActive', d.checked)} />
                     </Accordion.Title>
                   ),
                   content: {
@@ -542,15 +611,14 @@ class PackageView extends Component {
                         onDayClick={(d) => this.setData('rebuyPlan.startDate', d.getTime())}
                       />
                     ),
-                    key: 'content-0'
+                    key: 'content-1'
                   }
                 },
                 {
                   title: (
-                    <Accordion.Title key={1}>
+                    <Accordion.Title key={2}>
                       <Icon name='calendar' />
                       Stop On
-                      <Checkbox style={{ float: 'right' }} toggle checked={this.state.rebuyPlan.stopDateActive} onChange={(e, d) => this.setData('rebuyPlan.stopDateActive', d.checked)} />
                     </Accordion.Title>
                   ),
                   content: {
@@ -561,12 +629,12 @@ class PackageView extends Component {
                         onDayClick={(d) => this.setData('rebuyPlan.stopDate', d.getTime())}
                       />
                     ),
-                    key: 'content-1'
+                    key: 'content-2'
                   }
                 },
                 {
                   title: (
-                    <Accordion.Title key={2}>
+                    <Accordion.Title key={3}>
                       <Icon name='cart' />
                       Rebuy Plan
                     </Accordion.Title>
@@ -612,9 +680,11 @@ class PackageView extends Component {
                           value={this.state.rebuyPlan.max}
                           onChange={(e, { value }) => this.setData('rebuyPlan.max', Number.parseFloat(value))}
                         />
+                        <br />
+                        <Button fluid onClick={this.addRebuyPlan.bind(this)}>ADD PLAN</Button>
                       </div>
                     ),
-                    key: 'content-2'
+                    key: 'content-3'
                   }
                 }
               ]}
@@ -623,16 +693,60 @@ class PackageView extends Component {
           <Grid.Column width={4}>
             <Header as='h4' dividing>
               Withdraw Calculator
-              <Checkbox style={{ float: 'right' }} toggle checked={this.state.withdrawEnabled} onChange={(e, d) => this.setData('withdrawEnabled', d.checked)} />
             </Header>
-            <Accordion defaultActiveIndex={0}
+            <Accordion defaultActiveIndex={1}
               panels={[
                 {
                   title: (
                     <Accordion.Title key={0}>
+                      <Icon name='tasks' />
+                      Active Withdraw Plans
+                    </Accordion.Title>
+                  ),
+                  content: {
+                    content: (
+                      <List divided verticalAlign='middle'>
+                        {
+                          map(this.state.withdrawPlanList, (plan, i) => {
+                            return (
+                              <List.Item key={i}>
+                                <List.Content floated='right'>
+                                  <Button size='tiny' circular icon='remove' onClick={() => this.deleteWithdraw(i)} />
+                                </List.Content>
+                                <List.Content>
+                                  <Table basic='very' celled collapsing>
+                                    <Table.Body>
+                                      {
+                                        map(keys(plan), (k, j) => {
+                                          return (
+                                            <Table.Row key={j}>
+                                              <Table.Cell>
+                                                {k}
+                                              </Table.Cell>
+                                              <Table.Cell>
+                                                {k.match(/date/i) ? new Date(get(plan, k)).toLocaleDateString() : get(plan, k)}
+                                              </Table.Cell>
+                                            </Table.Row>
+                                          )
+                                        })
+                                      }
+                                    </Table.Body>
+                                  </Table>
+                                </List.Content>
+                              </List.Item>
+                            )
+                          })
+                        }
+                      </List>
+                    ),
+                    key: 'content-0'
+                  }
+                },
+                {
+                  title: (
+                    <Accordion.Title key={1}>
                       <Icon name='calendar' />
                       Start On
-                      <Checkbox style={{ float: 'right' }} toggle checked={this.state.withdrawPlan.startDateActive} onChange={(e, d) => this.setData('withdrawPlan.startDateActive', d.checked)} />
                     </Accordion.Title>
                   ),
                   content: {
@@ -643,15 +757,14 @@ class PackageView extends Component {
                         onDayClick={(d) => this.setData('withdrawPlan.startDate', d.getTime())}
                       />
                     ),
-                    key: 'content-0'
+                    key: 'content-1'
                   }
                 },
                 {
                   title: (
-                    <Accordion.Title key={1}>
+                    <Accordion.Title key={2}>
                       <Icon name='calendar' />
                       Stop On
-                      <Checkbox style={{ float: 'right' }} toggle checked={this.state.withdrawPlan.stopDateActive} onChange={(e, d) => this.setData('withdrawPlan.stopDateActive', d.checked)} />
                     </Accordion.Title>
                   ),
                   content: {
@@ -662,12 +775,12 @@ class PackageView extends Component {
                         onDayClick={(d) => this.setData('withdrawPlan.stopDate', d.getTime())}
                       />
                     ),
-                    key: 'content-1'
+                    key: 'content-2'
                   }
                 },
                 {
                   title: (
-                    <Accordion.Title key={2}>
+                    <Accordion.Title key={3}>
                       <Icon name='in cart' />
                       Withdraw Plan
                     </Accordion.Title>
@@ -734,9 +847,11 @@ class PackageView extends Component {
                           value={this.state.withdrawPlan.amount}
                           onChange={(e, { value }) => this.setData('withdrawPlan.amount', Number.parseFloat(value))}
                         />
+                        <br />
+                        <Button fluid onClick={this.addWithdrawPlan.bind(this)}>ADD PLAN</Button>
                       </div>
                     ),
-                    key: 'content-2'
+                    key: 'content-3'
                   }
                 }
               ]}
